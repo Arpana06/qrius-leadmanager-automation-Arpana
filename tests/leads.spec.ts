@@ -11,8 +11,7 @@ async function signIn(page, username: string, password: string) {
 test.describe('Leads list', () => {
   test('shows the correct number of leads after sign in', async ({ page }) => {
     await signIn(page, 'admin.qrius', 'Admin@123');
-    await expect(page.getByTestId('lead-row')).toHaveCount(12);
-  });
+   await expect(page.getByTestId('lead-row')).toHaveCount(13);  });
 
   test('role badge shows ADMIN for the admin', async ({ page }) => {
     await signIn(page, 'admin.qrius', 'Admin@123');

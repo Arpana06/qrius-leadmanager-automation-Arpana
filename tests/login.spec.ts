@@ -35,4 +35,7 @@ test.describe('Login', () => {
     await expect(page.getByTestId('login-error')).toBeVisible();
     await expect(page).toHaveURL(/\/login/);
   });
+   test('sign in button is visible on the login', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /sign in|log in|login/i })).toBeVisible();
+  });
 });

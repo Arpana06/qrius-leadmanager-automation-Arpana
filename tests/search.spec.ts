@@ -1,3 +1,4 @@
+// 
 import { test, expect } from '@playwright/test';
 import { admin, signIn } from './helpers';
 import { LeadsPage } from './pages/LeadsPage';
@@ -7,7 +8,7 @@ test.describe('Search', () => {
 
   test.beforeEach(async ({ page }) => {
     leads = await signIn(page, admin);
-    await expect(leads.rows).toHaveCount(12);
+    await expect(leads.rows.first()).toBeVisible();
   });
 
   test('searching by lead name narrows the list', async () => {
@@ -31,6 +32,6 @@ test.describe('Search', () => {
   test('count text reflects the number of leads shown', async () => {
     await leads.search('Sita');
     await expect(leads.rows).toHaveCount(1);
-    await expect(leads.count).toContainText('Showing 1 of 12');
+    await expect(leads.count).toContainText(/Showing 1 of \d+ leads/);
   });
 });

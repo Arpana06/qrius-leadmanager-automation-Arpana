@@ -1,7 +1,4 @@
 # Findings
-
-Judgement is exactly one of: **my test is wrong** or **the application has a bug**.
-
 ## Failed tests
 
 ### Test 1: Searching by a company name narrows the list

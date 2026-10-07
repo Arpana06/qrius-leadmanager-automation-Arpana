@@ -12,12 +12,11 @@ test.beforeEach(async ({ page }) => {
     await expect(page.getByTestId('lead-row').first()).toContainText('Sita Sharma');
   });
 
-  test('searching by company narrows the list', async ({ page }) => {
+     test('searching by company narrows the list', async ({ page }) => {
     await page.getByTestId('search-input').fill('HimalKart');
+    await expect(page.getByTestId('lead-row')).toHaveCount(1);
     await expect(page.getByTestId('lead-row').first()).toContainText('HimalKart');
-    await expect(page.getByTestId('lead-row')).not.toHaveCount(12);
   });
-
   test('searching for something missing shows the empty state', async ({ page }) => {
     await page.getByTestId('search-input').fill('zzzzzz');
     await expect(page.getByTestId('lead-row')).toHaveCount(0);

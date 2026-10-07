@@ -1,86 +1,104 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { admin, agent, signIn } from './helpers';
+import { LeadsPage } from './pages/LeadsPage';
+
+const PREFIX = 'AutoTest';
 
 function uniqueName(label: string): string {
-  return `AutoTest ${label} ${Date.now()}`;
+  return `${PREFIX} ${label} ${Date.now()}`;
 }
 
-async function addLead(page: Page, name: string, status?: string): Promise<void> {
-  await page.getByTestId('add-lead-button').click();
-  await expect(page.getByTestId('lead-modal')).toBeVisible();
-  await page.getByTestId('name').fill(name);
-  await page.getByTestId('email').fill('auto.test@example.com');
-  await page.getByTestId('company').fill('AutoCorp');
-  if (status) {
-    await page.getByTestId('status').selectOption(status);
-  }
-  await page.getByTestId('save-button').click();
-  await expect(page.getByTestId('lead-modal')).toBeHidden();
-}
+test.describe('Add, edit and delete (admin)', () => {
+  let leads: LeadsPage;
 
-test.describe('admin', () => {
-      test.afterEach(async ({ page }) => {
-    await page.reload(); // closes any form that is still open
-    await expect(page.getByTestId('lead-row').first()).toBeVisible();
-
-    const leftovers = page.getByTestId('lead-row').filter({ hasText: 'AutoTest' });
-    let remaining = await leftovers.count();
-    while (remaining > 0) {
-      await leftovers.first().getByTestId('delete-button').click();
-      await expect(leftovers).toHaveCount(remaining - 1);
-      remaining -= 1;
-    }
-  });
   test.beforeEach(async ({ page }) => {
-    await signIn(page, admin);
-    await expect(page.getByTestId('lead-row').first()).toBeVisible();
+    leads = await signIn(page, admin);
+    await expect(leads.rows.first()).toBeVisible();
   });
 
-  test('adding a lead saves it with the chosen status', async ({ page }) => {
+  test.afterEach(async () => {
+    await leads.cleanup(PREFIX);
+  });
+
+  test('adding a lead saves it with the chosen status', async () => {
     const name = uniqueName('Status');
-    await addLead(page, name, 'Qualified');
-
-    const row = page.getByTestId('lead-row').filter({ hasText: name });
-    await expect(row).toBeVisible();
-    await expect(row.getByTestId('lead-status')).toHaveText('Qualified');
+    await leads.addLead(name, 'Qualified');
+    await expect(leads.rowFor(name)).toBeVisible();
+    await expect(leads.statusOf(name)).toHaveText('Qualified');
   });
 
-  test('the new lead appears in the list', async ({ page }) => {
+  test('the new lead appears in the list', async () => {
     const name = uniqueName('Appears');
-    await addLead(page, name);
-
-    await expect(
-      page.getByTestId('lead-row').filter({ hasText: name })
-    ).toHaveCount(1);
+    await leads.addLead(name);
+    await expect(leads.rowFor(name)).toHaveCount(1);
   });
 
-  test('editing a lead status and updating', async ({ page }) => {
+  test('editing a lead status updates it in the list', async () => {
     const name = uniqueName('Edit');
-    await addLead(page, name);
-
-    const row = page.getByTestId('lead-row').filter({ hasText: name });
-    await row.getByTestId('edit-button').click();
-    await expect(page.getByTestId('lead-modal')).toBeVisible();
-    await page.getByTestId('status').selectOption('Contacted');
-    await page.getByTestId('save-button').click();
-    await expect(page.getByTestId('lead-modal')).toBeHidden();
-
-    await expect(row.getByTestId('lead-status')).toHaveText('Contacted');
+    await leads.addLead(name);
+    await leads.editStatus(name, 'Contacted');
+    await expect(leads.statusOf(name)).toHaveText('Contacted');
   });
 
-  test('admin can delete a lead and the row disappears', async ({ page }) => {
+  test('admin can delete a lead and the row disappears', async () => {
     const name = uniqueName('Delete');
-    await addLead(page, name);
-
-    const row = page.getByTestId('lead-row').filter({ hasText: name });
-    await row.getByTestId('delete-button').click();
-
-    await expect(row).toHaveCount(0);
+    await leads.addLead(name);
+    await leads.deleteLead(name);
+    await expect(leads.rowFor(name)).toHaveCount(0);
   });
 });
 
 test('agent does not see a delete button', async ({ page }) => {
-  await signIn(page, agent);
-  await expect(page.getByTestId('lead-row').first()).toBeVisible();
-  await expect(page.getByTestId('delete-button')).toHaveCount(0);
+  const leads = await signIn(page, agent);
+  await expect(leads.rows.first()).toBeVisible();
+  await expect(leads.deleteButtons).toHaveCount(0);
 });
+// import { test, expect } from '@playwright/test';
+// import { admin, agent, signIn } from './helpers';
+// import { LeadsPage } from './pages/LeadsPage';
+
+// function uniqueName(label: string): string {
+//   return `AutoTest ${label} ${Date.now()}`;
+// }
+
+// test.describe('Add, edit and delete (admin)', () => {
+//   let leads: LeadsPage;
+
+//   test.beforeEach(async ({ page }) => {
+//     leads = await signIn(page, admin);
+//     await expect(leads.rows.first()).toBeVisible();
+//   });
+
+//   test('adding a lead saves it with the chosen status', async () => {
+//     const name = uniqueName('Status');
+//     await leads.addLead(name, 'Qualified');
+//     await expect(leads.rowFor(name)).toBeVisible();
+//     await expect(leads.statusOf(name)).toHaveText('Qualified');
+//   });
+
+//   test('the new lead appears in the list', async () => {
+//     const name = uniqueName('Appears');
+//     await leads.addLead(name);
+//     await expect(leads.rowFor(name)).toHaveCount(1);
+//   });
+
+//   test('editing a lead status updates it in the list', async () => {
+//     const name = uniqueName('Edit');
+//     await leads.addLead(name);
+//     await leads.editStatus(name, 'Contacted');
+//     await expect(leads.statusOf(name)).toHaveText('Contacted');
+//   });
+
+//   test('admin can delete a lead and the row disappears', async () => {
+//     const name = uniqueName('Delete');
+//     await leads.addLead(name);
+//     await leads.deleteLead(name);
+//     await expect(leads.rowFor(name)).toHaveCount(0);
+//   });
+// });
+
+// test('agent does not see a delete button', async ({ page }) => {
+//   const leads = await signIn(page, agent);
+//   await expect(leads.rows.first()).toBeVisible();
+//   await expect(leads.deleteButtons).toHaveCount(0);
+// });

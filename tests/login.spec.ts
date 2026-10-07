@@ -1,8 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { LoginPage } from './pages/LoginPage';
+import { LeadsPage } from './pages/LeadsPage';
+import { admin, agent } from './helpers';
 
 test.describe('Login', () => {
+  let loginPage: LoginPage;
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
+    loginPage = new LoginPage(page);
+    await loginPage.goto();
   });
 
   test('login page has the correct title', async ({ page }) => {
@@ -10,32 +16,24 @@ test.describe('Login', () => {
   });
 
   test('admin signs in and reaches the Leads page', async ({ page }) => {
-    await page.getByTestId('username').fill('admin.qrius');
-    await page.getByTestId('password').fill('Admin@123');
-    await page.getByTestId('login-button').click();
-
-    await expect(page).toHaveURL(/\/leads/);
-    await expect(page.getByTestId('nav-role')).toHaveText('ADMIN');
+    await loginPage.login(admin.username, admin.password);
+    await loginPage.expectOnLeadsPage();
+    await expect(new LeadsPage(page).roleBadge).toHaveText(admin.role);
   });
 
   test('agent signs in and sees the AGENT role', async ({ page }) => {
-    await page.getByTestId('username').fill('agent.qrius');
-    await page.getByTestId('password').fill('Agent@123');
-    await page.getByTestId('login-button').click();
-
-    await expect(page).toHaveURL(/\/leads/);
-    await expect(page.getByTestId('nav-role')).toHaveText('AGENT');
+    await loginPage.login(agent.username, agent.password);
+    await loginPage.expectOnLeadsPage();
+    await expect(new LeadsPage(page).roleBadge).toHaveText(agent.role);
   });
 
   test('wrong password shows an error and stays on login', async ({ page }) => {
-    await page.getByTestId('username').fill('admin.qrius');
-    await page.getByTestId('password').fill('WrongPassword');
-    await page.getByTestId('login-button').click();
-
-    await expect(page.getByTestId('login-error')).toBeVisible();
+    await loginPage.login(admin.username, 'WrongPassword');
+    await expect(loginPage.error).toBeVisible();
     await expect(page).toHaveURL(/\/login/);
   });
-   test('sign in button is visible on the login', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /sign in|log in|login/i })).toBeVisible();
+
+  test('sign in button is visible on the login page', async () => {
+    await expect(loginPage.signInButtonByRole).toBeVisible();
   });
 });
